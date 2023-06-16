@@ -908,7 +908,7 @@ static const struct psmouse_protocol psmouse_protocols[] = {
 		.init		= byd_init,
 	},
 #endif
-#ifdef CONFIG_MOUSE_PS2_FUJITSU_SCROLL
+/* #ifdef CONFIG_MOUSE_PS2_FUJITSU_SCROLL */
 	{
           .type           = PSMOUSE_FUJITSU_SCROLL,
           .name           = "FujitsuPS/2",
@@ -916,7 +916,9 @@ static const struct psmouse_protocol psmouse_protocols[] = {
           .detect         = fujitsu_scroll_detect,
           .init           = fujitsu_scroll_init,
         },
+/*
 #endif  
+*/
 	{
 		.type		= PSMOUSE_AUTO,
 		.name		= "auto",
@@ -1101,8 +1103,8 @@ static int psmouse_extensions(struct psmouse *psmouse,
 				 set_properties, true)) {
 		return PSMOUSE_THINKPS;
 	}
-
-#ifdef CONFIG_MOUSE_PS2_FUJITSU_SCROLL  
+/* #ifdef CONFIG_MOUSE_PS2_FUJITSU_SCROLL   */
+	/* printk(KERN_INFO "hello, world psmouse\n"); */
         /*
          * Look for the Fujitsu Scroll devices.  Uses DMI to limit this check
          * to those laptop models they're may actually be on.
@@ -1111,7 +1113,9 @@ static int psmouse_extensions(struct psmouse *psmouse,
                                  set_properties, max_proto > PSMOUSE_IMEX)) {
           return PSMOUSE_FUJITSU_SCROLL;
         }
+/*
 #endif
+*/
 
 	/*
 	 * Try Synaptics TouchPad. Note that probing is done even if
