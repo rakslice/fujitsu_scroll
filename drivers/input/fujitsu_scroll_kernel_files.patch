@@ -1,0 +1,98 @@
+--- linux61-mouse/Kconfig
++++ mouse/Kconfig
+@@ -184,6 +184,17 @@
+ 
+ 	  If unsure, say Y.
+ 
++config MOUSE_PS2_FUJITSU_SCROLL
++        bool "Fujitsu Lifebook T901/P772 Scroll Device protocol extension"
++	default n
++        depends on MOUSE_PS2 && X86 && DMI
++        help
++          Say Y here if you have a Fujitsu Lifebook T901 or P772 laptop and
++	  (or perhaps others) and wish to use the extra scrolling devices.
++	  This is unrelated to touchpad support.
++
++          If unsure, say N.
++
+ config MOUSE_PS2_VMMOUSE
+ 	bool "Virtual mouse (vmmouse)"
+ 	depends on MOUSE_PS2 && X86 && HYPERVISOR_GUEST
+--- linux61-mouse/Makefile
++++ mouse/Makefile
+@@ -26,7 +26,7 @@
+ obj-$(CONFIG_MOUSE_VSXXXAA)		+= vsxxxaa.o
+ 
+ cyapatp-objs := cyapa.o cyapa_gen3.o cyapa_gen5.o cyapa_gen6.o
+-psmouse-objs := psmouse-base.o synaptics.o focaltech.o
++psmouse-objs := psmouse-base.o synaptics.o focaltech.o fujitsu_scroll.o
+ 
+ psmouse-$(CONFIG_MOUSE_PS2_ALPS)	+= alps.o
+ psmouse-$(CONFIG_MOUSE_PS2_BYD)		+= byd.o
+@@ -38,6 +38,7 @@
+ psmouse-$(CONFIG_MOUSE_PS2_TRACKPOINT)	+= trackpoint.o
+ psmouse-$(CONFIG_MOUSE_PS2_TOUCHKIT)	+= touchkit_ps2.o
+ psmouse-$(CONFIG_MOUSE_PS2_CYPRESS)	+= cypress_ps2.o
++psmouse-$(CONFIG_MOUSE_PS2_FUJITSU_SCROLL) += fujitsu_scroll.o
+ psmouse-$(CONFIG_MOUSE_PS2_VMMOUSE)	+= vmmouse.o
+ 
+ psmouse-$(CONFIG_MOUSE_PS2_SMBUS)	+= psmouse-smbus.o
+--- linux61-mouse/psmouse-base.c
++++ mouse/psmouse-base.c
+@@ -36,6 +36,7 @@
+ #include "focaltech.h"
+ #include "vmmouse.h"
+ #include "byd.h"
++#include "fujitsu_scroll.h"
+ 
+ #define DRIVER_DESC	"PS/2 mouse driver"
+ 
+@@ -907,7 +908,18 @@
+ 		.init		= byd_init,
+ 	},
+ #endif
++/* #ifdef CONFIG_MOUSE_PS2_FUJITSU_SCROLL */
+ 	{
++          .type           = PSMOUSE_FUJITSU_SCROLL,
++          .name           = "FujitsuPS/2",
++          .alias          = "fjs",
++          .detect         = fujitsu_scroll_detect,
++          .init           = fujitsu_scroll_init,
++        },
++/*
++#endif  
++*/
++	{
+ 		.type		= PSMOUSE_AUTO,
+ 		.name		= "auto",
+ 		.alias		= "any",
+@@ -1091,6 +1103,19 @@
+ 				 set_properties, true)) {
+ 		return PSMOUSE_THINKPS;
+ 	}
++/* #ifdef CONFIG_MOUSE_PS2_FUJITSU_SCROLL   */
++	/* printk(KERN_INFO "hello, world psmouse\n"); */
++        /*
++         * Look for the Fujitsu Scroll devices.  Uses DMI to limit this check
++         * to those laptop models they're may actually be on.
++         */
++        if (psmouse_try_protocol(psmouse, PSMOUSE_FUJITSU_SCROLL, &max_proto,
++                                 set_properties, max_proto > PSMOUSE_IMEX)) {
++          return PSMOUSE_FUJITSU_SCROLL;
++        }
++/*
++#endif
++*/
+ 
+ 	/*
+ 	 * Try Synaptics TouchPad. Note that probing is done even if
+--- linux61-mouse/psmouse.h
++++ mouse/psmouse.h
+@@ -69,6 +69,7 @@
+ 	PSMOUSE_BYD,
+ 	PSMOUSE_SYNAPTICS_SMBUS,
+ 	PSMOUSE_ELANTECH_SMBUS,
++	PSMOUSE_FUJITSU_SCROLL,
+ 	PSMOUSE_AUTO		/* This one should always be last */
+ };
+ 
